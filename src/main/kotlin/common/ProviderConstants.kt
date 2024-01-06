@@ -7,4 +7,5 @@ object ProviderConstants {
     const val SHOWBOX_BASE = "https://www.showbox.media"
     const val SMASHYSTREAM_BASE = "https://embed.smashystream.com"
     const val ZOECHIP_BASE = "https://zoechip.cc"
+    const val UPLOADSCRAPER_ID = "upcloud"
 }

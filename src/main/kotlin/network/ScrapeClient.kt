@@ -2,21 +2,34 @@ package network
 
 import io.ktor.client.*
 import io.ktor.client.engine.java.*
+import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.Json
 
 object ScrapeClient {
+    @OptIn(ExperimentalSerializationApi::class)
     private val scrapeClient = HttpClient(Java) {
         install(Logging) {
-            this.level = LogLevel.NONE
-            this.logger = object: Logger {
+            this.level = LogLevel.ALL
+            this.logger = object : Logger {
                 override fun log(message: String) {
                     println("==============================================")
                     println(message)
                     println("==============================================")
                 }
             }
+        }
+        install(ContentNegotiation) {
+            json(Json {
+                prettyPrint = true
+                isLenient = true
+                explicitNulls = false
+                ignoreUnknownKeys = true
+            })
         }
     }
 

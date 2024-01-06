@@ -1,18 +1,16 @@
 package providers.sources.flixhq
 
-import common.ProviderConstants.UPLOADSCRAPER_ID
+import common.ProviderConstants.UPCLOUD_ID
+import common.SourceTypes
 import entrypoint.utils.CommonMedia
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import providers.SourceCreator
 import providers.sources.Embed
 import providers.sources.EmbedSources
-import providers.sources.flixhq.FlixHqScrapeUtils.getFlixhqMovieSources
-import providers.sources.flixhq.FlixHqScrapeUtils.getFlixhqShowSources
-import providers.sources.flixhq.FlixHqScrapeUtils.getFlixhqSourceDetails
 import utils.errors.NotFoundError
 
-class FlixHqScraper : SourceCreator() {
+class FlixHqScraper : SourceCreator(SourceTypes.FLIXHQ) {
 
     override suspend fun getMovie(media: CommonMedia.MovieMedia): EmbedSources = withContext(Dispatchers.IO) {
         val id = FlixHqSearch.getFlixHqId(media)
@@ -28,7 +26,7 @@ class FlixHqScraper : SourceCreator() {
             EmbedSources(
                 embeds = upcloudStream.map {
                     Embed(
-                        embedId = UPLOADSCRAPER_ID,
+                        embedId = UPCLOUD_ID,
                         url = getFlixhqSourceDetails(it.episodeId)
                     )
                 }
@@ -49,7 +47,7 @@ class FlixHqScraper : SourceCreator() {
             EmbedSources(
                 embeds = upcloudStream.map {
                     Embed(
-                        embedId = UPLOADSCRAPER_ID,
+                        embedId = UPCLOUD_ID,
                         url = getFlixhqSourceDetails(it.episodeId)
                     )
                 }

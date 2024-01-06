@@ -16,8 +16,8 @@ object CompareUtil {
         return normalizeTitle(a) == normalizeTitle(b)
     }
 
-    fun compareMedia(media: CommonMedia, item: SourceItem): Boolean {
-        val isSameYear = media.releaseYear == item.year
-        return compareTitle(media.title, item.title) && isSameYear
+    fun compareMedia(media: CommonMedia, title: String, year: Int): Boolean {
+        val isSameYear = media.releaseYear == year
+        return compareTitle(media.title, title) && isSameYear
     }
 }

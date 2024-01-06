@@ -39,7 +39,7 @@ object FlixHqSearch {
         var matchedItem: SourceItem? = null
         for (item in items) {
             val isMatched = when(media) {
-                is CommonMedia.MovieMedia -> CompareUtil.compareMedia(media, item)
+                is CommonMedia.MovieMedia -> CompareUtil.compareMedia(media, item.title, item.year)
                 is CommonMedia.ShowMedia -> CompareUtil.compareTitle(media.title, item.title) && media.season.number < item.seasons + 1
             }
 

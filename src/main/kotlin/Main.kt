@@ -1,14 +1,12 @@
 import entrypoint.utils.CommonMedia
-import entrypoint.utils.PartInfo
 import io.ktor.client.*
 import io.ktor.client.engine.java.*
 import io.ktor.client.plugins.logging.*
-import providers.sources.flixhq.FlixHqSearch
-import providers.sources.flixhq.FlixHqSourceCreator
+import providers.sources.flixhq.FlixHqScraper
 
 suspend fun main(args: Array<String>) {
     println("Hello World!")
-    val embeds = FlixHqSourceCreator()
+    val embeds = FlixHqScraper()
         .getMovie(CommonMedia.MovieMedia(
             "Dave Chappelle: The Dreamer",
             2023,

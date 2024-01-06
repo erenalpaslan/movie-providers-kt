@@ -1,100 +1,58 @@
 package providers.sources.flixhq
 
-import common.ProviderConstants
+import common.ProviderConstants.UPLOADSCRAPER_ID
 import entrypoint.utils.CommonMedia
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import network.ScrapeClient
-import org.jsoup.Jsoup
-import org.jsoup.select.NodeFilter
-import providers.sources.Episode
-import providers.sources.SourceLink
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import providers.SourceCreator
+import providers.sources.Embed
+import providers.sources.EmbedSources
+import providers.sources.flixhq.FlixHqScrapeUtils.getFlixhqMovieSources
+import providers.sources.flixhq.FlixHqScrapeUtils.getFlixhqShowSources
+import providers.sources.flixhq.FlixHqScrapeUtils.getFlixhqSourceDetails
 import utils.errors.NotFoundError
 
-object FlixHqScraper {
+class FlixHqScraper : SourceCreator() {
 
-    suspend fun getFlixhqMovieSources(media: CommonMedia.MovieMedia, id: String): List<SourceLink> {
-        val episodeParts = id.split("-")
-        val episodeId = episodeParts.last()
+    override suspend fun getMovie(media: CommonMedia.MovieMedia): EmbedSources = withContext(Dispatchers.IO) {
+        val id = FlixHqSearch.getFlixHqId(media)
+        if (id.isNullOrEmpty())
+            throw NotFoundError("No search results matched")
 
-        val response = ScrapeClient.get {
-            url("${ProviderConstants.FLIX_BASE}/ajax/movie/episodes/${episodeId}")
-        }.bodyAsText()
+        val sources = getFlixhqMovieSources(media, id)
+        val upcloudStream = sources.filter { it.embed.lowercase() == "upcloud" }
 
-        val doc = Jsoup.parse(response)
-
-        val sourceLinks = doc.select(".nav-item > a").map { query ->
-            val embedTitle = query.attr("title")
-            val linkId = query.attr("data-linkid")
-            if (embedTitle.isNullOrEmpty() && linkId.isNullOrEmpty())
-                throw Exception("Invalid sources")
-
-            SourceLink(
-                embed = embedTitle,
-                episodeId = linkId
-            )
-        }
-
-        return sourceLinks
-    }
-
-    suspend fun getFlixhqSourceDetails(sourceId: String): String {
-        return ScrapeClient.get {
-            url("${ProviderConstants.FLIX_BASE}/ajax/sources/$sourceId")
-        }.body<FlixhqSourceDetail>().link
-    }
-
-    suspend fun getFlixhqShowSources(media: CommonMedia.ShowMedia, id: String): List<SourceLink> {
-        val episodeParts = id.split("-")
-        val episodeId = episodeParts.last()
-
-        val response = ScrapeClient.get {
-            url("${ProviderConstants.FLIX_BASE}/ajax/season/list/$episodeId")
-        }.bodyAsText()
-
-        val seasonDoc = Jsoup.parse(response)
-        val season = seasonDoc.select(".dropdown-item")
-            .find {
-                it.text() == "Season ${media.season.number}" && it.hasAttr("data-id")
-            }?.attr("data-id") ?: throw NotFoundError("season not found")
-
-        val episodesResponse = ScrapeClient.get {
-            url("${ProviderConstants.FLIX_BASE}/ajax/season/episodes/$season")
-        }.bodyAsText()
-
-        val episodeDoc = Jsoup.parse(episodesResponse)
-        val episode = episodeDoc.select(".nav-item > a")
-            .map {
-                Episode(
-                    id = it.attr("data-id"),
-                    title = it.attr("title")
-                )
-            }.find {
-                it.title?.startsWith("Eps ${media.episode.number}") == true
-            }?.id
-        if (episode.isNullOrEmpty()) throw NotFoundError("episode not found")
-
-        val sourceResponse = ScrapeClient.get {
-            url("${ProviderConstants.FLIX_BASE}/ajax/episode/servers/$episode")
-        }.bodyAsText()
-
-        val sourceDoc = Jsoup.parse(sourceResponse)
-        val sourceLinks = arrayListOf<SourceLink>()
-        sourceDoc.select(".nav-item > a")
-            .map { query ->
-                val embedTitle = query.attr("title")
-                val linkId = query.attr("data-id")
-                if (!embedTitle.isNullOrEmpty() && !linkId.isNullOrEmpty()) {
-                    sourceLinks.add(
-                        SourceLink(
-                            embed = embedTitle,
-                            episodeId = linkId
-                        )
+        return@withContext if (upcloudStream.isEmpty())
+            throw NotFoundError("upcloud stream not found for flixhq")
+        else
+            EmbedSources(
+                embeds = upcloudStream.map {
+                    Embed(
+                        embedId = UPLOADSCRAPER_ID,
+                        url = getFlixhqSourceDetails(it.episodeId)
                     )
                 }
-            }
+            )
+    }
 
-        return sourceLinks
+    override suspend fun getShow(media: CommonMedia.ShowMedia) = withContext(Dispatchers.IO) {
+        val id = FlixHqSearch.getFlixHqId(media)
+        if (id.isNullOrEmpty())
+            throw NotFoundError("No search results matched")
+
+        val sources = getFlixhqShowSources(media, id)
+        val upcloudStream = sources.filter { it.embed.lowercase() == "server upcloud" }
+
+        return@withContext if (upcloudStream.isEmpty())
+            throw NotFoundError("upcloud stream not found for flixhq")
+        else
+            EmbedSources(
+                embeds = upcloudStream.map {
+                    Embed(
+                        embedId = UPLOADSCRAPER_ID,
+                        url = getFlixhqSourceDetails(it.episodeId)
+                    )
+                }
+            )
     }
 }

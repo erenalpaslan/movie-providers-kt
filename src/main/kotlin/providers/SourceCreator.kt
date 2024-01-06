@@ -4,8 +4,8 @@ import entrypoint.utils.CommonMedia
 import providers.sources.EmbedSources
 
 abstract class SourceCreator {
-    abstract suspend fun getShow(media: CommonMedia): EmbedSources
-    abstract suspend fun getMovie(media: CommonMedia): EmbedSources
+    abstract suspend fun getMovie(media: CommonMedia.MovieMedia): EmbedSources
+    abstract suspend fun getShow(media: CommonMedia.ShowMedia): EmbedSources
 }
 
 data class Source(

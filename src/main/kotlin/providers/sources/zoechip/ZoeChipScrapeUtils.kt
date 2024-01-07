@@ -1,15 +1,15 @@
 package providers.sources.zoechip
 
-import common.ProviderConstants
 import entrypoint.utils.CommonMedia
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.http.*
 import network.ScrapeClient
 import org.jsoup.Jsoup
-import providers.scraper.MixdropScraper
-import providers.scraper.UpcloudScraper
-import providers.scraper.UpstreamScraper
+import providers.embeds.MixdropScraper
+import providers.embeds.UpcloudScraper
+import providers.embeds.UpstreamScraper
 import providers.sources.Embed
 import providers.sources.EmbedSources
 import providers.sources.SourceLink
@@ -98,7 +98,10 @@ suspend fun ZoeChipScraper.formatSource(source: SourceLink): Embed? {
 }
 
 suspend fun ZoeChipScraper.getZoeChipSourceURL(sourceID: String): String? {
-    val details = ScrapeClient.get {
+    val details =  ScrapeClient.get {
+        headers {
+            append("ContentType", "application/json")
+        }
         url("${type.baseUrl}/ajax/sources/$sourceID")
     }.body<ZoeChipDetailResponse?>()
 

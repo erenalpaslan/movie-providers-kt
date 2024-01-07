@@ -5,7 +5,8 @@ import entrypoint.utils.CommonMedia
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import providers.SourceCreator
-import providers.scraper.UpcloudScraper
+import providers.embeds.ScraperTypes
+import providers.embeds.UpcloudScraper
 import providers.sources.Embed
 import providers.sources.EmbedSources
 import utils.errors.NotFoundError
@@ -18,7 +19,7 @@ class FlixHqScraper : SourceCreator(SourceTypes.FLIXHQ) {
             throw NotFoundError("No search results matched")
 
         val sources = getFlixhqMovieSources(media, id)
-        val upcloudStream = sources.filter { it.embed.lowercase() == "upcloud" }
+        val upcloudStream = sources.filter { it.embed.lowercase() == ScraperTypes.Upcloud.id }
 
         return@withContext if (upcloudStream.isEmpty())
             throw NotFoundError("upcloud stream not found for flixhq")
@@ -39,7 +40,7 @@ class FlixHqScraper : SourceCreator(SourceTypes.FLIXHQ) {
             throw NotFoundError("No search results matched")
 
         val sources = getFlixhqShowSources(media, id)
-        val upcloudStream = sources.filter { it.embed.lowercase() == "server upcloud" }
+        val upcloudStream = sources.filter { it.embed.lowercase() == "server ${ScraperTypes.Upcloud.id}" }
 
         return@withContext if (upcloudStream.isEmpty())
             throw NotFoundError("upcloud stream not found for flixhq")

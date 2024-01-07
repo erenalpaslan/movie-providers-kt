@@ -1,11 +1,11 @@
 package providers.sources.flixhq
 
-import common.ProviderConstants.UPCLOUD_ID
 import common.SourceTypes
 import entrypoint.utils.CommonMedia
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import providers.SourceCreator
+import providers.scraper.UpcloudScraper
 import providers.sources.Embed
 import providers.sources.EmbedSources
 import utils.errors.NotFoundError
@@ -26,7 +26,7 @@ class FlixHqScraper : SourceCreator(SourceTypes.FLIXHQ) {
             EmbedSources(
                 embeds = upcloudStream.map {
                     Embed(
-                        embedId = UPCLOUD_ID,
+                        embedId = UpcloudScraper.type.id,
                         url = getFlixhqSourceDetails(it.episodeId)
                     )
                 }
@@ -47,7 +47,7 @@ class FlixHqScraper : SourceCreator(SourceTypes.FLIXHQ) {
             EmbedSources(
                 embeds = upcloudStream.map {
                     Embed(
-                        embedId = UPCLOUD_ID,
+                        embedId = UpcloudScraper.type.id,
                         url = getFlixhqSourceDetails(it.episodeId)
                     )
                 }

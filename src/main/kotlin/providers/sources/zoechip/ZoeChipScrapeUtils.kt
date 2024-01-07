@@ -7,6 +7,9 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import network.ScrapeClient
 import org.jsoup.Jsoup
+import providers.scraper.MixdropScraper
+import providers.scraper.UpcloudScraper
+import providers.scraper.UpstreamScraper
 import providers.sources.Embed
 import providers.sources.EmbedSources
 import providers.sources.SourceLink
@@ -79,9 +82,9 @@ suspend fun ZoeChipScraper.formatSource(source: SourceLink): Embed? {
     val parsedURL = URL(link)
 
     val embedId = when(parsedURL.host) {
-        "rabbitstream.net" -> ProviderConstants.UPCLOUD_ID
-        "upstream.to" -> ProviderConstants.UPSTREAM_ID
-        "mixdrop.co" -> ProviderConstants.MIXDROP_ID
+        "rabbitstream.net" -> UpcloudScraper.type.id
+        "upstream.to" -> UpstreamScraper.type.id
+        "mixdrop.co" -> MixdropScraper.type.id
         else -> null
     }
 

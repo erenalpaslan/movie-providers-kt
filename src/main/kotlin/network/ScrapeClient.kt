@@ -16,7 +16,7 @@ object ScrapeClient {
     @OptIn(ExperimentalSerializationApi::class)
     private val scrapeClient = HttpClient(Java) {
         install(Logging) {
-            this.level = LogLevel.NONE
+            this.level = LogLevel.INFO
             this.logger = object : Logger {
                 override fun log(message: String) {
                     println("==============================================")

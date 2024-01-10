@@ -18,6 +18,7 @@ dependencies {
     implementation("io.ktor:ktor-client-java:$ktor_version")
     implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
+    implementation("com.google.crypto.tink:tink:1.12.0")
 
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")

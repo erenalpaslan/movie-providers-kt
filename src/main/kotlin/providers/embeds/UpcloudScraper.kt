@@ -20,16 +20,22 @@ object UpcloudScraper : BaseScraper(ScraperTypes.Upcloud) {
         val parsedUrl = URL(embed.url?.replace("embed-5", "embed-4"))
         val dataPath = parsedUrl.path.split("/")
         val dataId = dataPath.last()
-        val streamResponse = ScrapeClient.get {
-            url("https://${parsedUrl.host}/ajax/embed-4/getSources?id=$dataId")
-            headers {
-                append("Referer", parsedUrl.toString())
-                append("X-Requested-With", "XMLHttpRequest")
+        var response: HttpResponse? = null
+        val streamData = try {
+            response = ScrapeClient.get {
+                url("https://${parsedUrl.host}/ajax/embed-4/getSources?id=$dataId")
+                headers {
+                    append("Referer", parsedUrl.toString())
+                    append("X-Requested-With", "XMLHttpRequest")
+                }
             }
-        }.body<UpcloudSources>()
+            response.body<UpcloudSourcesEncrypted>()
+        }catch (e: Exception) {
+            response?.body<UpcloudSources>()
+        }
 
         val source = UpcloudSource()
-        if (!streamResponse.sources.isJSON()) {
+        if (streamData is UpcloudSourcesEncrypted && !streamData.sources.isJSON()) {
             val scriptJs = ScrapeClient.get {
                 url("https://rabbitstream.net/js/player/prod/e4-player.min.js")
                 parameters {
@@ -40,13 +46,13 @@ object UpcloudScraper : BaseScraper(ScraperTypes.Upcloud) {
             if (decriptionKey.isEmpty()) throw Exception("Key extraction failed")
 
             var extractedKey: String = ""
-            var strippedSources = streamResponse.sources
+            var strippedSources = streamData.sources
             var totalledOffset = 0
             decriptionKey.forEach { pair ->
                 val start = pair.first + totalledOffset
                 val end = start + pair.second
-                extractedKey += streamResponse.sources?.slice(start..end)
-                strippedSources = strippedSources?.replace(streamResponse.sources?.substring(start, end) ?: "", "")
+                extractedKey += streamData.sources?.slice(start..end)
+                strippedSources = strippedSources?.replace(streamData.sources?.substring(start, end) ?: "", "")
                 totalledOffset += pair.second
             }
 
@@ -60,9 +66,10 @@ object UpcloudScraper : BaseScraper(ScraperTypes.Upcloud) {
              */
         }
 
-        if (streamResponse.sources.isNullOrEmpty()) throw Exception("upcloud source not found")
+        if (streamData is UpcloudSourcesEncrypted && streamData.sources.isNullOrEmpty()) throw Exception("upcloud source not found")
+        if (streamData is UpcloudSources && streamData.sources.isNullOrEmpty()) throw Exception("upcloud source not found")
         val captions = arrayListOf<EmbedCaption>()
-        for (track in streamResponse.tracks) {
+        for (track in streamData?.tracks ?: emptyList()) {
             if (track.kind != "captions") continue
             val type = Captions.getCaptionTypeFromUrl(track.file) ?: continue
             val language = Captions.getLanguageCode(track.label) ?: continue
@@ -96,38 +103,45 @@ object UpcloudScraper : BaseScraper(ScraperTypes.Upcloud) {
         val endOfCases = script.indexOf("partKeyStartPosition")
         val switchBody = script.slice(startOfSwitch..endOfCases)
         val nums = arrayListOf<Pair<Int, Int>>()
-        ":[a-zA-Z0-9]+=([a-zA-Z0-9]+),[a-zA-Z0-9]+=([a-zA-Z0-9]+);".toRegex().findAll(switchBody)
-            .forEach { res ->
-                res.groupValues.forEach {group ->
-                    val innerNumbers = arrayListOf<Int>()
-                    try {
-                        println(group)
-                        listOf(group[1], group[2]).forEach {
-                            val regex = Regex("($it=0x)([a-zA-Z0-9]+)")
-                            val varMatches = regex.find(script)
-                            val lastMatch = varMatches?.groupValues?.last()
-                            if (lastMatch != null) {
-                                innerNumbers.add(lastMatch.toInt(16))
-                            }
+        ":[a-zA-Z0-9]+=([a-zA-Z0-9]+),[a-zA-Z0-9]+=([a-zA-Z0-9]+);"
+            .toRegex()
+            .find(switchBody)
+            ?.groupValues?.let { list ->
+                val innerNumbers = arrayListOf<Int>()
+                try {
+                    listOf(list[1], list[2]).forEach { group ->
+                        val regex = Regex("($group=0x)([a-zA-Z0-9]+)")
+                        val varMatches = regex.findAll(script).flatMap { it.groupValues }.toList()
+                        val lastMatch = varMatches.last()
+                        if (lastMatch.isNotBlank()) {
+                            innerNumbers.add(lastMatch.toInt(16))
                         }
-                        nums.add(innerNumbers[0] to innerNumbers[1])
-                    } catch (e: Exception) {
                     }
+                    nums.add(innerNumbers[0] to innerNumbers[1])
+                } catch (e: Exception) {
                 }
             }
 
-        println(nums)
         return nums
     }
 
 }
 
 @Serializable
+data class UpcloudSourcesEncrypted(
+    val sources: String?
+): BaseUpcloudSources()
+
+@Serializable
 data class UpcloudSources(
-    val sources: String?,
-    val tracks: List<UpcloudTracks>,
-    val encrypted: Boolean,
-    val server: Int
+    val sources: List<String>?
+): BaseUpcloudSources()
+
+@Serializable
+open class BaseUpcloudSources(
+    val tracks: List<UpcloudTracks> = emptyList(),
+    val encrypted: Boolean = false,
+    val server: Int = 0
 )
 
 @Serializable
